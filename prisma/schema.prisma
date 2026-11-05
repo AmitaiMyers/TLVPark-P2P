@@ -1,0 +1,177 @@
+// TLVPark database schema.
+//
+// Conventions:
+//   - Money is stored as integer agorot (1 ILS = 100 agorot). Never floats.
+//   - All instants are `timestamptz`, stored in UTC and displayed in
+//     Asia/Jerusalem by the app.
+//   - Invariants that Prisma cannot express (CHECK constraints, overlap
+//     exclusion constraints) live in hand-written SQL inside the migrations;
+//     each one is mentioned next to the field it protects.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+/// Mock-auth user (no password). Every user can both host and rent.
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  /// Optional contact number shown to the other party of a booking.
+  phone     String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  spots    ParkingSpot[]
+  bookings Booking[]
+}
+
+enum SpotType {
+  DRIVEWAY
+  UNDERGROUND_GARAGE
+  OPEN_LOT
+}
+
+model ParkingSpot {
+  id          String   @id @default(cuid())
+  hostId      String
+  title       String
+  description String
+  /// Free-text street address as shown to renters, e.g. "Dizengoff 50".
+  addressLine String
+  /// CHECK: inside the Tel Aviv-Yafo bounding box (lat 32.02-32.15, lng 34.74-34.86).
+  latitude    Float
+  longitude   Float
+  spotType    SpotType
+
+  // Dimensions in centimeters. CHECK: all positive.
+  // The size category (motorcycle/small/regular/SUV) is derived from these
+  // in code and deliberately NOT stored, so it can never disagree with them.
+  lengthCm          Int
+  widthCm           Int
+  /// null = no height limit (open air).
+  heightClearanceCm Int?
+
+  // Features (search filters).
+  isCovered    Boolean @default(false)
+  isGated      Boolean @default(false)
+  hasEvCharger Boolean @default(false)
+
+  // Pricing. CHECK: whole shekels (multiple of 100 agorot), so a 30-minute
+  // slot (half the hourly rate) is always an exact number of agorot.
+  // CHECK: dailyCapAgorot >= hourlyRateAgorot.
+  /// Price per hour, in agorot.
+  hourlyRateAgorot Int
+  /// Maximum charged for any 24-hour block, in agorot.
+  dailyCapAgorot   Int
+
+  // Revealed to the renter only once a booking is confirmed.
+  /// Gate remote dial-in number, e.g. "+972-3-555-1234". null if not gated.
+  gatePhoneNumber    String?
+  accessInstructions String
+
+  /// Hosts unlist a spot instead of deleting it (bookings reference it).
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+  updatedAt DateTime @updatedAt @db.Timestamptz(3)
+
+  host                   User                    @relation(fields: [hostId], references: [id], onDelete: Restrict)
+  availabilityRules      AvailabilityRule[]
+  availabilityExceptions AvailabilityException[]
+  bookings               Booking[]
+
+  @@index([hostId])
+  @@index([latitude, longitude])
+}
+
+/// Recurring weekly window, in Asia/Jerusalem local time.
+/// A window that crosses midnight is stored as two rules.
+/// CHECK: dayOfWeek 0-6; minutes are multiples of 30; 0 <= start < end <= 1440.
+/// EXCLUDE: rules of the same spot and weekday may not overlap.
+model AvailabilityRule {
+  id          String @id @default(cuid())
+  spotId      String
+  /// 0 = Sunday ... 6 = Saturday (the Israeli week starts on Sunday).
+  dayOfWeek   Int
+  /// Minutes since local midnight, e.g. 480 = 08:00.
+  startMinute Int
+  /// Minutes since local midnight, exclusive; 1440 = end of day.
+  endMinute   Int
+
+  spot ParkingSpot @relation(fields: [spotId], references: [id], onDelete: Cascade)
+}
+
+enum AvailabilityExceptionKind {
+  /// Spot unavailable in this window, even if a weekly rule covers it.
+  BLOCKED
+  /// Spot available in this window, even if no weekly rule covers it.
+  EXTRA
+}
+
+/// One-off override of the weekly schedule for a concrete time range.
+/// CHECK: startsAt < endsAt, both on a 30-minute boundary.
+/// EXCLUDE: exceptions of the same spot may not overlap, so BLOCKED vs EXTRA
+/// precedence is never ambiguous.
+model AvailabilityException {
+  id       String                    @id @default(cuid())
+  spotId   String
+  kind     AvailabilityExceptionKind
+  startsAt DateTime                  @db.Timestamptz(3)
+  endsAt   DateTime                  @db.Timestamptz(3)
+  note     String?
+
+  spot ParkingSpot @relation(fields: [spotId], references: [id], onDelete: Cascade)
+}
+
+/// A booking is "active" or "completed" based on the current time; only
+/// cancellation is stored as a status change.
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+enum CancelledBy {
+  RENTER
+  HOST
+}
+
+/// CHECK: endsAt - startsAt >= 1 hour; both on a 30-minute boundary.
+/// CHECK: cancelledAt/cancelledBy are set if and only if status = CANCELLED.
+/// EXCLUDE: CONFIRMED bookings of the same spot may not overlap. This is the
+/// database-level guarantee against double-booking under concurrent checkouts.
+model Booking {
+  id               String        @id @default(cuid())
+  spotId           String
+  renterId         String
+  startsAt         DateTime      @db.Timestamptz(3)
+  endsAt           DateTime      @db.Timestamptz(3)
+  /// Price snapshot at checkout, in agorot. Host rate changes never alter it.
+  totalPriceAgorot Int
+  status           BookingStatus @default(CONFIRMED)
+  cancelledAt      DateTime?     @db.Timestamptz(3)
+  cancelledBy      CancelledBy?
+  createdAt        DateTime      @default(now()) @db.Timestamptz(3)
+
+  spot   ParkingSpot @relation(fields: [spotId], references: [id], onDelete: Restrict)
+  renter User        @relation(fields: [renterId], references: [id], onDelete: Restrict)
+  review Review?
+
+  @@index([renterId])
+}
+
+/// One review per booking, written by the booking's renter after it ends.
+/// The spot and author are reached through the booking (no duplicated keys).
+/// CHECK: rating 1-5.
+model Review {
+  id        String   @id @default(cuid())
+  bookingId String   @unique
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now()) @db.Timestamptz(3)
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+}

@@ -1,0 +1,20 @@
+{
+  "name": "TLVPark - Tel Aviv P2P Parking",
+  "short_name": "TLVPark",
+  "description": "Rent private parking spots in Tel Aviv by the hour or day. השכרת חניות פרטיות בתל אביב.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#0f766e",
+  "lang": "he",
+  "dir": "auto",
+  "categories": ["travel", "navigation", "lifestyle"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

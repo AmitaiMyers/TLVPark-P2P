@@ -1,0 +1,42 @@
+# Render Blueprint: one Node web service + one managed PostgreSQL database.
+# Apply it in the Render dashboard: New > Blueprint > pick this repository.
+#
+# Free-plan caveats (chosen deliberately for the MVP):
+#   - The free Postgres database EXPIRES 30 days after creation. Upgrade its
+#     `plan` (e.g. basic-256mb) before then, or recreate it.
+#   - The free web service sleeps after ~15 minutes idle; the first request
+#     afterwards takes a while (cold start).
+#   - `preDeployCommand` is a paid-plan feature, so migrations run in
+#     `startCommand` instead. When upgrading the web service, move
+#     `npm run db:deploy` into `preDeployCommand`.
+
+databases:
+  - name: tlvpark-db
+    plan: free
+    region: frankfurt # Closest Render region to Israel; must match the web service.
+    databaseName: tlvpark
+    user: tlvpark
+    postgresMajorVersion: "16" # Matches local development; btree_gist is required.
+    ipAllowList: [] # No public access: only services on Render's private network.
+
+services:
+  - type: web
+    name: tlvpark-web
+    runtime: node # Node version comes from package.json "engines".
+    plan: free
+    region: frankfurt
+    # --include=dev: the build needs devDependencies (Tailwind, TypeScript)
+    # even if NODE_ENV=production is set in the build environment.
+    # `npm run build` runs `prisma generate && next build`.
+    buildCommand: npm ci --include=dev && npm run build
+    # Applies pending migrations (no-op when up to date), then starts Next.js,
+    # which listens on Render's $PORT automatically.
+    startCommand: npm run db:deploy && npm run start
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tlvpark-db
+          property: connectionString # Internal (private network) URL.
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
