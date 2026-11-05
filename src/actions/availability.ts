@@ -7,12 +7,13 @@ import { prisma } from "@/lib/db";
 import { EXCEPTION_KINDS } from "@/lib/enums";
 import { formatDateTimeRange } from "@/lib/format";
 import { readEnum, readInteger, readIntegerList, readOptionalString, readRequiredString } from "@/lib/form";
-import { isSlotAligned, MINUTES_PER_DAY, parseJerusalemInputValue, rangesOverlap, SLOT_MINUTES } from "@/lib/time";
+import { isSlotAligned, MINUTES_PER_DAY, parseJerusalemInputValue, SLOT_MINUTES } from "@/lib/time";
+import { anyWindowsOverlap, windowsForDays, windowsOverlap } from "@/lib/weeklyWindows";
 import { lockSpot } from "@/server/spotLock";
 import { requireOwnedSpot } from "@/server/spots";
 
-function readSlotMinute(formData: FormData, name: string): number {
-  const minute = readInteger(formData, name, { min: 0, max: MINUTES_PER_DAY });
+function readSlotMinute(formData: FormData, name: string, max: number): number {
+  const minute = readInteger(formData, name, { min: 0, max });
   if (minute % SLOT_MINUTES !== 0) throw new Error(`Form field "${name}" must be a multiple of ${SLOT_MINUTES}`);
   return minute;
 }
@@ -29,19 +30,21 @@ export async function addWeeklyRules(
 
   const days = readIntegerList(formData, "days", { min: 0, max: 6 });
   if (days.length === 0) return userError("NO_DAYS_SELECTED");
-  const startMinute = readSlotMinute(formData, "startMinute");
-  const endMinute = readSlotMinute(formData, "endMinute");
-  if (endMinute <= startMinute) return userError("RULE_END_NOT_AFTER_START");
+  // The start select offers 00:00-23:30 and the end select 00:00-24:00.
+  const startMinute = readSlotMinute(formData, "startMinute", MINUTES_PER_DAY - SLOT_MINUTES);
+  const endMinute = readSlotMinute(formData, "endMinute", MINUTES_PER_DAY);
+  // An end before the start is an overnight window; only equal times are invalid.
+  if (endMinute === startMinute) return userError("RULE_EMPTY_WINDOW");
 
+  const newWindows = windowsForDays(days, startMinute, endMinute);
+  const overlapsEachOther = anyWindowsOverlap(newWindows);
   // Checked here for a friendly message; the database EXCLUDE constraint
   // remains the guarantee.
-  const existingRules = await prisma.availabilityRule.findMany({ where: { spotId, dayOfWeek: { in: days } } });
-  const overlaps = existingRules.some((rule) => rangesOverlap(rule.startMinute, rule.endMinute, startMinute, endMinute));
-  if (overlaps) return userError("RULE_OVERLAP");
+  const existingRules = await prisma.availabilityRule.findMany({ where: { spotId } });
+  const overlapsExisting = newWindows.some((window) => existingRules.some((rule) => windowsOverlap(window, rule)));
+  if (overlapsEachOther || overlapsExisting) return userError("RULE_OVERLAP");
 
-  await prisma.availabilityRule.createMany({
-    data: days.map((dayOfWeek) => ({ spotId, dayOfWeek, startMinute, endMinute })),
-  });
+  await prisma.availabilityRule.createMany({ data: newWindows.map((window) => ({ spotId, ...window })) });
   refresh();
   return ACTION_SUCCESS;
 }

@@ -4,6 +4,7 @@ import { LOCALES, LOCALE_DIRECTION } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/dictionaries";
 import { AppHeader } from "@/components/AppHeader";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
+import { InstallHint, OfflineBanner } from "@/components/StatusBanners";
 import "../globals.css";
 
 /** Heebo covers both Hebrew and Latin glyphs, so one font serves both locales. */
@@ -41,6 +42,7 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
   const locale = await getLocale();
+  const status = (await getDictionary()).status;
   return (
     <html
       lang={locale}
@@ -48,8 +50,10 @@ export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
       className={`${heebo.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
+        <OfflineBanner message={status.offline} />
         <AppHeader />
         {children}
+        <InstallHint title={status.installTitle} body={status.installIos} dismissLabel={status.dismiss} />
         <ServiceWorkerRegistrar />
       </body>
     </html>

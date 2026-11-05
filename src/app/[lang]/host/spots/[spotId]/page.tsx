@@ -21,9 +21,12 @@ import { suggestedWindowValues } from "@/lib/bookingWindow";
 import { prisma } from "@/lib/db";
 import { EXCEPTION_KINDS } from "@/lib/enums";
 import { formatDateTimeRange } from "@/lib/format";
-import { formatMinuteOfDay, MINUTE_OF_DAY_OPTIONS } from "@/lib/time";
+import { formatMinuteOfDay, MINUTE_OF_DAY_OPTIONS, MINUTES_PER_DAY } from "@/lib/time";
 import { AGOROT_PER_SHEKEL } from "@/lib/pricing";
 import { requireOwnedSpot } from "@/server/spots";
+
+/** A window can start at 23:30 at the latest; it can end at 24:00. */
+const START_MINUTE_OPTIONS = MINUTE_OF_DAY_OPTIONS.filter((minute) => minute < MINUTES_PER_DAY);
 
 function toFormValues(spot: ParkingSpot): SpotFormValues {
   return {
@@ -46,12 +49,22 @@ function toFormValues(spot: ParkingSpot): SpotFormValues {
   };
 }
 
-function MinuteSelect({ name, label, defaultValue }: { name: string; label: string; defaultValue: number }) {
+function MinuteSelect({
+  name,
+  label,
+  defaultValue,
+  options,
+}: {
+  name: string;
+  label: string;
+  defaultValue: number;
+  options: readonly number[];
+}) {
   return (
     <label className={styles.label}>
       {label}
       <select name={name} defaultValue={defaultValue} className={styles.input} dir="ltr">
-        {MINUTE_OF_DAY_OPTIONS.map((minute) => (
+        {options.map((minute) => (
           <option key={minute} value={minute}>
             {formatMinuteOfDay(minute)}
           </option>
@@ -122,8 +135,8 @@ async function ManageSpotContent({ params }: { params: Promise<{ spotId: string 
             ))}
           </fieldset>
           <div className="grid grid-cols-2 gap-3">
-            <MinuteSelect name="startMinute" label={text.start} defaultValue={8 * 60} />
-            <MinuteSelect name="endMinute" label={text.end} defaultValue={18 * 60} />
+            <MinuteSelect name="startMinute" label={text.start} defaultValue={8 * 60} options={START_MINUTE_OPTIONS} />
+            <MinuteSelect name="endMinute" label={text.end} defaultValue={18 * 60} options={MINUTE_OF_DAY_OPTIONS} />
           </div>
           <SubmitButton className={styles.buttonSecondary}>{text.addWindow}</SubmitButton>
         </ActionForm>

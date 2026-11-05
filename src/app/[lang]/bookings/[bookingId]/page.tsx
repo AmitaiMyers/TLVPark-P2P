@@ -16,10 +16,17 @@ import { bookingPhase, canSeeAccessDetails } from "@/lib/bookingPhase";
 import { prisma } from "@/lib/db";
 import { formatDateTimeRange, formatIls } from "@/lib/format";
 import { wazeNavigationUrl } from "@/lib/geo";
+import { readSearchParam, type RawSearchParams } from "@/lib/searchParams";
 
 const RATINGS = [1, 2, 3, 4, 5];
 
-async function BookingContent({ params }: { params: Promise<{ bookingId: string }> }) {
+async function BookingContent({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ bookingId: string }>;
+  searchParams: Promise<RawSearchParams>;
+}) {
   await connection();
   const now = new Date();
   const locale = await getLocale();
@@ -35,12 +42,18 @@ async function BookingContent({ params }: { params: Promise<{ bookingId: string 
   if (booking === null || booking.renterId !== user.id) notFound();
 
   const phase = bookingPhase(booking, now);
+  const justBooked = readSearchParam(await searchParams, "confirmed") === "1";
   const { spot } = booking;
   const text = dictionary.booking;
   const phaseLabel = bookingPhaseLabel(phase, dictionary.bookings);
 
   return (
     <main className={styles.page}>
+      {justBooked && phase !== "CANCELLED" && (
+        <p role="status" className={`${styles.success} text-base font-semibold`}>
+          ✓ {text.confirmed}
+        </p>
+      )}
       <header className="flex flex-col gap-1">
         <p className={`${styles.badge} self-start`}>{phaseLabel}</p>
         <h1 className={styles.heading} dir="auto">{spot.title}</h1>
@@ -141,10 +154,10 @@ async function BookingContent({ params }: { params: Promise<{ bookingId: string 
   );
 }
 
-export default function BookingPage({ params }: PageProps<"/[lang]/bookings/[bookingId]">) {
+export default function BookingPage({ params, searchParams }: PageProps<"/[lang]/bookings/[bookingId]">) {
   return (
     <Suspense fallback={<PageLoading />}>
-      <BookingContent params={params} />
+      <BookingContent params={params} searchParams={searchParams} />
     </Suspense>
   );
 }

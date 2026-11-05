@@ -66,7 +66,7 @@ export async function createBooking(
   }
   if (!outcome.ok) return outcome.result;
 
-  redirect(`/${locale}/bookings/${outcome.bookingId}`);
+  redirect(`/${locale}/bookings/${outcome.bookingId}?confirmed=1`);
 }
 
 function cancellingParty(

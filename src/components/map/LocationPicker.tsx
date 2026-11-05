@@ -39,8 +39,11 @@ export function LocationPicker({ locale, text, defaultAddress, defaultLocation }
   async function searchAddress() {
     setSearch({ status: "searching" });
     const params = new URLSearchParams({ q: address, lang: locale });
-    const response = await fetch(`/api/geocode?${params.toString()}`);
-    if (!response.ok) {
+    // Agreed exception to the no-catch rule: fetch() rejects when the device
+    // has no network. That is an expected user situation (not a bug), and
+    // without handling it the button would stay on "Searching…" forever.
+    const response = await fetch(`/api/geocode?${params.toString()}`).catch(() => null);
+    if (response === null || !response.ok) {
       setSearch({ status: "failed" });
       return;
     }
