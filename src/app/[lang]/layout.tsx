@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Heebo } from "next/font/google";
 import { LOCALES, LOCALE_DIRECTION } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/dictionaries";
+import { AppHeader } from "@/components/AppHeader";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
 import "../globals.css";
 
@@ -47,6 +48,7 @@ export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
       className={`${heebo.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">
+        <AppHeader />
         {children}
         <ServiceWorkerRegistrar />
       </body>

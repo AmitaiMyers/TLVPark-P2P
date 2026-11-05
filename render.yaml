@@ -29,9 +29,10 @@ services:
     # even if NODE_ENV=production is set in the build environment.
     # `npm run build` runs `prisma generate && next build`.
     buildCommand: npm ci --include=dev && npm run build
-    # Applies pending migrations (no-op when up to date), then starts Next.js,
+    # Applies pending migrations (no-op when up to date), inserts any missing
+    # demo users/spots (never overwrites existing rows), then starts Next.js,
     # which listens on Render's $PORT automatically.
-    startCommand: npm run db:deploy && npm run start
+    startCommand: npm run db:deploy && npm run db:seed && npm run start
     healthCheckPath: /api/health
     envVars:
       - key: DATABASE_URL

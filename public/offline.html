@@ -28,6 +28,16 @@
       h1 { margin: 0; font-size: 1.5rem; }
       p { margin: 0; line-height: 1.5; }
       hr { width: 100%; border: none; border-top: 1px solid #e5e5e5; }
+      #saved-bookings { display: none; flex-direction: column; gap: 8px; text-align: start; }
+      #saved-bookings a {
+        display: block;
+        padding: 12px 16px;
+        border: 2px solid #0f766e;
+        border-radius: 12px;
+        color: #0f766e;
+        font-weight: 600;
+        text-decoration: none;
+      }
       button {
         padding: 12px 16px;
         border: none;
@@ -52,6 +62,36 @@
       <h1 dir="ltr">You're offline</h1>
       <p dir="ltr">Check your connection and try again.</p>
       <button type="button" onclick="location.reload()">נסו שוב · Try again</button>
+      <section id="saved-bookings" aria-live="polite">
+        <h2>ההזמנות השמורות שלך · Your saved bookings</h2>
+      </section>
     </main>
+    <script>
+      // Lists booking pages saved for offline use (gate number + access
+      // instructions). The cache name MUST match OFFLINE_BOOKINGS_CACHE in
+      // src/lib/offline.ts; this static page cannot import it.
+      const BOOKINGS_CACHE = "tlvpark-bookings";
+
+      async function listSavedBookings() {
+        if (!("caches" in window)) return;
+        const cache = await caches.open(BOOKINGS_CACHE);
+        const requests = await cache.keys();
+        if (requests.length === 0) return;
+
+        const section = document.getElementById("saved-bookings");
+        for (const request of requests) {
+          const response = await cache.match(request);
+          const page = new DOMParser().parseFromString(await response.text(), "text/html");
+          const heading = page.querySelector("h1");
+          const link = document.createElement("a");
+          link.href = new URL(request.url).pathname;
+          link.textContent = heading === null ? link.href : heading.textContent;
+          section.append(link);
+        }
+        section.style.display = "flex";
+      }
+
+      listSavedBookings();
+    </script>
   </body>
 </html>

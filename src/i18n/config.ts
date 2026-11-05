@@ -18,3 +18,14 @@ export const LOCALE_DIRECTION: Record<Locale, "rtl" | "ltr"> = {
 export function isLocale(value: string): value is Locale {
   return (LOCALES as readonly string[]).includes(value);
 }
+
+/** For values that crossed the network (e.g. bound server-action args). */
+export function assertLocale(value: string): Locale {
+  if (!isLocale(value)) throw new Error(`Unsupported locale "${value}"`);
+  return value;
+}
+
+/** "Back" points toward the start of the reading direction. */
+export function backArrow(locale: Locale): string {
+  return LOCALE_DIRECTION[locale] === "rtl" ? "→" : "←";
+}

@@ -24,3 +24,32 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
 }
+
+/* Map markers (Leaflet DivIcons, see components/map). */
+.tlvpark-price-tag {
+  display: inline-block;
+  transform: translate(-50%, calc(-100% - 4px));
+  white-space: nowrap;
+  border-radius: 9999px;
+  background: var(--color-brand);
+  color: #ffffff;
+  padding: 2px 8px;
+  font: 600 13px/1.4 var(--font-sans), system-ui, sans-serif;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+}
+
+.tlvpark-pin {
+  display: block;
+  width: 28px;
+  height: 28px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: var(--color-brand);
+  border: 3px solid #ffffff;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+}
+
+/* Leaflet panes stack above page content by default; keep them below the header. */
+.leaflet-container {
+  z-index: 0;
+}
