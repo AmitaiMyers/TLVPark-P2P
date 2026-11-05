@@ -33,10 +33,13 @@ function FollowPin({ location }: { location: LatLng | null }) {
 export default function LeafletLocationPicker({
   location,
   center,
+  pinLabel,
   onPick,
 }: {
   location: LatLng | null;
   center: LatLng;
+  /** Accessible name of the draggable pin (it is a focusable control). */
+  pinLabel: string;
   onPick: (location: LatLng) => void;
 }) {
   return (
@@ -48,6 +51,8 @@ export default function LeafletLocationPicker({
         <Marker
           position={[location.latitude, location.longitude]}
           icon={PIN_ICON}
+          title={pinLabel}
+          alt={pinLabel}
           draggable
           eventHandlers={{
             dragend: (event) => {

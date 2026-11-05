@@ -10,14 +10,13 @@ type TimeRangeInputsProps = {
   /** Earliest selectable value, or null for no lower bound. */
   min: string | null;
   required: boolean;
-  onChange?: (field: "start" | "end", value: string) => void;
 };
 
 /**
- * Start/end pickers shared by search, checkout and host exceptions.
+ * Exact start/end pickers for host one-off exceptions (which may span days).
  * step = 30 minutes: browsers then reject times off the half-hour grid.
  */
-export function TimeRangeInputs({ startLabel, endLabel, defaultStart, defaultEnd, min, required, onChange }: TimeRangeInputsProps) {
+export function TimeRangeInputs({ startLabel, endLabel, defaultStart, defaultEnd, min, required }: TimeRangeInputsProps) {
   const stepSeconds = SLOT_MS / 1000;
   const fields = [
     { name: "start" as const, label: startLabel, defaultValue: defaultStart },
@@ -25,7 +24,7 @@ export function TimeRangeInputs({ startLabel, endLabel, defaultStart, defaultEnd
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {fields.map((field) => (
         <label key={field.name} className={styles.label}>
           {field.label}
@@ -37,7 +36,6 @@ export function TimeRangeInputs({ startLabel, endLabel, defaultStart, defaultEnd
             step={stepSeconds}
             required={required}
             className={styles.input}
-            onChange={onChange === undefined ? undefined : (event) => onChange(field.name, event.target.value)}
           />
         </label>
       ))}

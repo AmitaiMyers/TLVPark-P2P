@@ -1,3 +1,4 @@
+import { X } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -12,6 +13,7 @@ import { ActionForm, SubmitButton } from "@/components/ActionForm";
 import { PageLoading } from "@/components/PageLoading";
 import { SpotForm, type SpotFormValues } from "@/components/SpotForm";
 import { TimeRangeInputs } from "@/components/TimeRangeInputs";
+import { ToggleChip } from "@/components/ToggleChip";
 import { WeeklySchedule } from "@/components/WeeklySchedule";
 import { styles } from "@/components/ui";
 import type { ParkingSpot } from "@/generated/prisma/client";
@@ -117,22 +119,25 @@ async function ManageSpotContent({ params }: { params: Promise<{ spotId: string 
             weekdays={dictionary.enums.weekdays}
             renderAction={(rule) => (
               <form action={deleteWeeklyRule.bind(null, locale, spot.id, rule.id)}>
-                <button type="submit" aria-label={dictionary.common.delete} className="px-1 text-red-600">
-                  ×
+                <button
+                  type="submit"
+                  aria-label={dictionary.common.delete}
+                  className="-me-1 inline-flex size-8 items-center justify-center rounded-full text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+                >
+                  <X size={16} aria-hidden />
                 </button>
               </form>
             )}
           />
         )}
         <ActionForm action={addWeeklyRules.bind(null, locale, spot.id)} errorMessages={dictionary.errors}>
-          <fieldset className="flex flex-wrap gap-3 text-sm">
-            <legend className="mb-1 font-medium">{text.days}</legend>
-            {dictionary.enums.weekdays.map((weekday, dayOfWeek) => (
-              <label key={weekday} className="flex items-center gap-1">
-                <input type="checkbox" name="days" value={dayOfWeek} />
-                {weekday}
-              </label>
-            ))}
+          <fieldset className="flex flex-col gap-2">
+            <legend className="mb-1 text-sm font-medium">{text.days}</legend>
+            <div className="flex flex-wrap gap-2">
+              {dictionary.enums.weekdays.map((weekday, dayOfWeek) => (
+                <ToggleChip key={weekday} name="days" value={String(dayOfWeek)} label={weekday} defaultChecked={false} />
+              ))}
+            </div>
           </fieldset>
           <div className="grid grid-cols-2 gap-3">
             <MinuteSelect name="startMinute" label={text.start} defaultValue={8 * 60} options={START_MINUTE_OPTIONS} />

@@ -11,7 +11,7 @@ import { deriveSpotSize, spotFitsVehicle, type VehicleSize } from "@/lib/vehicle
 export type SpotFeatureFilters = { isCovered: boolean; isGated: boolean; hasEvCharger: boolean };
 
 export type SearchFilters = {
-  window: BookingWindow | null;
+  window: BookingWindow;
   vehicleSize: VehicleSize | null;
   features: SpotFeatureFilters;
 };
@@ -29,8 +29,8 @@ export type SpotSearchResult = {
   isGated: boolean;
   hasEvCharger: boolean;
   ratings: number[];
-  /** Price for the searched window; null when no window was given. */
-  totalPriceAgorot: number | null;
+  /** Price for the searched window. */
+  totalPriceAgorot: number;
 };
 
 export type RatingsLookup = (spotId: string) => number[];
@@ -67,8 +67,8 @@ async function bookedSpotIds(window: BookingWindow): Promise<Set<string>> {
 }
 
 /**
- * Listed spots matching the filters. With a time window, only spots that are
- * open for the whole window and not already booked are returned.
+ * Listed spots matching the filters that are open for the whole window and
+ * not already booked.
  * Size and availability are filtered in code so their rules exist only once
  * (in lib/vehicle and lib/availability).
  */
@@ -85,11 +85,10 @@ export async function searchSpots(filters: SearchFilters): Promise<SpotSearchRes
   });
 
   const { window, vehicleSize } = filters;
-  const booked = window === null ? new Set<string>() : await bookedSpotIds(window);
+  const booked = await bookedSpotIds(window);
 
   const matching = spots.filter((spot) => {
     if (vehicleSize !== null && !spotFitsVehicle(spot, vehicleSize)) return false;
-    if (window === null) return true;
     if (booked.has(spot.id)) return false;
     return isWindowAvailable(spot.availabilityRules, spot.availabilityExceptions, window.startsAt, window.endsAt);
   });
@@ -108,7 +107,7 @@ export async function searchSpots(filters: SearchFilters): Promise<SpotSearchRes
     isGated: spot.isGated,
     hasEvCharger: spot.hasEvCharger,
     ratings: ratingsFor(spot.id),
-    totalPriceAgorot: window === null ? null : computeBookingPriceAgorot(window.startsAt, window.endsAt, spot),
+    totalPriceAgorot: computeBookingPriceAgorot(window.startsAt, window.endsAt, spot),
   }));
 }
 

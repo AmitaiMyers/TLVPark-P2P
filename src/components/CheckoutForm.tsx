@@ -1,5 +1,6 @@
 "use client";
 
+import { CreditCard } from "lucide-react";
 import { useState } from "react";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries/en";
@@ -9,7 +10,7 @@ import { parseBookingWindow } from "@/lib/bookingWindow";
 import { formatIls } from "@/lib/format";
 import { computeBookingPriceAgorot, type SpotPricing } from "@/lib/pricing";
 import { ActionForm, SubmitButton } from "./ActionForm";
-import { TimeRangeInputs } from "./TimeRangeInputs";
+import { WhenPicker } from "./WhenPicker";
 import { styles } from "./ui";
 
 type CheckoutFormProps = {
@@ -18,49 +19,46 @@ type CheckoutFormProps = {
   pricing: SpotPricing;
   defaultStart: string;
   defaultEnd: string;
-  minStart: string;
-  dictionary: Pick<Dictionary, "checkout" | "common" | "errors">;
+  nowMs: number;
+  dictionary: Pick<Dictionary, "checkout" | "errors" | "when">;
 };
 
 /**
- * Time selection with a live price preview, then a simulated payment.
- * The preview runs the same validation and pricing code as the server.
+ * Time selection with a live price, then a simulated payment. The preview
+ * runs the same validation and pricing code as the server.
  */
-export function CheckoutForm({ action, locale, pricing, defaultStart, defaultEnd, minStart, dictionary }: CheckoutFormProps) {
-  const [range, setRange] = useState({ start: defaultStart, end: defaultEnd });
+export function CheckoutForm({ action, locale, pricing, defaultStart, defaultEnd, nowMs, dictionary }: CheckoutFormProps) {
+  const [range, setRange] = useState<{ start: string; end: string } | null>({ start: defaultStart, end: defaultEnd });
 
-  const hasBothValues = range.start !== "" && range.end !== "";
-  const preview = hasBothValues ? parseBookingWindow(range.start, range.end, new Date()) : null;
+  const preview = range === null ? null : parseBookingWindow(range.start, range.end, new Date(nowMs));
   const priceAgorot =
     preview !== null && preview.ok
       ? computeBookingPriceAgorot(preview.window.startsAt, preview.window.endsAt, pricing)
       : null;
+  const priceLabel = priceAgorot === null ? "—" : formatIls(priceAgorot, locale);
 
   return (
     <ActionForm action={action} errorMessages={dictionary.errors}>
-      <TimeRangeInputs
-        startLabel={dictionary.common.from}
-        endLabel={dictionary.common.until}
+      <WhenPicker
+        locale={locale}
+        text={dictionary.when}
         defaultStart={defaultStart}
         defaultEnd={defaultEnd}
-        min={minStart}
-        required
-        onChange={(field, value) => setRange((current) => ({ ...current, [field]: value }))}
+        nowMs={nowMs}
+        onChange={setRange}
       />
-
-      <div className="flex items-center justify-between rounded-xl bg-brand/10 p-3">
-        <span>{dictionary.checkout.priceFor}</span>
-        <strong className="text-lg">{priceAgorot === null ? "—" : formatIls(priceAgorot, locale)}</strong>
-      </div>
-      {preview === null && <p className={styles.muted}>{dictionary.checkout.choosePrompt}</p>}
       {preview !== null && !preview.ok && <p className={styles.error}>{dictionary.errors[preview.error]}</p>}
 
+      <div className="flex items-center justify-between rounded-xl bg-brand/10 px-4 py-3">
+        <span className="font-medium">{dictionary.checkout.priceFor}</span>
+        <strong className="text-2xl text-accent">{priceLabel}</strong>
+      </div>
+
       <SubmitButton>
-        {priceAgorot === null
-          ? fillTemplate(dictionary.checkout.pay, { amount: "—" })
-          : fillTemplate(dictionary.checkout.pay, { amount: formatIls(priceAgorot, locale) })}
+        <CreditCard size={18} aria-hidden />
+        {fillTemplate(dictionary.checkout.pay, { amount: priceLabel })}
       </SubmitButton>
-      <p className={styles.muted}>{dictionary.checkout.simulatedNote}</p>
+      <p className={`${styles.muted} text-center`}>{dictionary.checkout.simulatedNote}</p>
     </ActionForm>
   );
 }

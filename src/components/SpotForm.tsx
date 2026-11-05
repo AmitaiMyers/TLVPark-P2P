@@ -8,7 +8,8 @@ import type { ActionResult } from "@/lib/actionResult";
 import { SPOT_TYPES } from "@/lib/enums";
 import { VEHICLE_SPACE_REQUIREMENTS } from "@/lib/vehicle";
 import { ActionForm, SubmitButton } from "./ActionForm";
-import { FEATURE_KEYS } from "./SpotFeatureBadges";
+import { FEATURE_ICONS, FEATURE_KEYS } from "./SpotFeatureBadges";
+import { ToggleChip } from "./ToggleChip";
 import { LocationPicker } from "./map/LocationPicker";
 import { styles } from "./ui";
 
@@ -116,13 +117,19 @@ export function SpotForm({ action, locale, initial, submitLabel, successMessage,
       </Section>
 
       <Section title={text.sectionFeatures}>
-        <div className="flex flex-wrap gap-4">
-          {FEATURE_KEYS.map((key) => (
-            <label key={key} className="flex items-center gap-2">
-              <input type="checkbox" name={key} defaultChecked={initial?.[key]} />
-              {enums.feature[key]}
-            </label>
-          ))}
+        <div className="flex flex-wrap gap-2">
+          {FEATURE_KEYS.map((key) => {
+            const Icon = FEATURE_ICONS[key];
+            return (
+              <ToggleChip
+                key={key}
+                name={key}
+                label={enums.feature[key]}
+                icon={<Icon size={16} aria-hidden />}
+                defaultChecked={initial === null ? false : initial[key]}
+              />
+            );
+          })}
         </div>
       </Section>
 

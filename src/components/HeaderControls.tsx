@@ -1,10 +1,12 @@
 "use client";
 
+import { Languages, LogOut } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { signOut } from "@/actions/auth";
 import type { Locale } from "@/i18n/config";
 import { clearOfflineBookings } from "@/lib/offline";
+import { styles } from "./ui";
 
 const OTHER_LOCALE: Record<Locale, Locale> = { he: "en", en: "he" };
 
@@ -16,7 +18,12 @@ export function LanguageSwitcher({ locale, label }: { locale: Locale; label: str
   const query = searchParams.toString();
   const href = `/${OTHER_LOCALE[locale]}${pathWithoutLocale}${query === "" ? "" : `?${query}`}`;
   return (
-    <Link href={href} className="text-sm underline">
+    <Link
+      href={href}
+      lang={OTHER_LOCALE[locale]}
+      className="inline-flex min-h-10 items-center gap-1.5 rounded-full border border-black/15 px-3 text-sm font-medium dark:border-white/20"
+    >
+      <Languages size={16} aria-hidden />
       {label}
     </Link>
   );
@@ -30,7 +37,8 @@ export function SignOutButton({ locale, label }: { locale: Locale; label: string
   }
   return (
     <form action={handleSignOut}>
-      <button type="submit" className="text-sm underline">
+      <button type="submit" className={`${styles.buttonDanger} w-full gap-2`}>
+        <LogOut size={18} aria-hidden />
         {label}
       </button>
     </form>

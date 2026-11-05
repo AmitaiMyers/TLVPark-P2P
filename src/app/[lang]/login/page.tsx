@@ -6,12 +6,25 @@ import { styles } from "@/components/ui";
 import { getDictionary, getLocale } from "@/i18n/dictionaries";
 import { prisma } from "@/lib/db";
 import { readSearchParam, type RawSearchParams } from "@/lib/searchParams";
+import { fillTemplate } from "@/i18n/template";
+
+/** "Noa Levi" -> "NL" */
+function initials(name: string): string {
+  return name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+}
 
 async function LoginContent({ searchParams }: { searchParams: Promise<RawSearchParams> }) {
   const locale = await getLocale();
   const dictionary = await getDictionary();
   const returnPath = readSearchParam(await searchParams, "next");
-  const users = await prisma.user.findMany({ orderBy: { createdAt: "asc" } });
+  const users = await prisma.user.findMany({
+    orderBy: { createdAt: "asc" },
+    include: { _count: { select: { spots: true } } },
+  });
 
   return (
     <main className={styles.page}>
@@ -24,10 +37,23 @@ async function LoginContent({ searchParams }: { searchParams: Promise<RawSearchP
           {users.map((user) => (
             <li key={user.id}>
               <form action={signInAsUser.bind(null, locale, returnPath, user.id)}>
-                <button type="submit" className={`${styles.buttonSecondary} w-full justify-between`}>
-                  <span>{user.name}</span>
-                  <span className="text-xs font-normal" dir="ltr">
-                    {user.email}
+                <button
+                  type="submit"
+                  className="flex min-h-14 w-full items-center gap-3 rounded-xl border border-black/10 px-3 text-start transition hover:border-brand active:scale-[0.99] dark:border-white/15"
+                >
+                  <span
+                    className="flex size-10 shrink-0 items-center justify-center rounded-full bg-brand font-bold text-white"
+                    aria-hidden
+                  >
+                    {initials(user.name)}
+                  </span>
+                  <span className="flex min-w-0 flex-col">
+                    <span className="font-semibold">{user.name}</span>
+                    <span className={styles.muted}>
+                      {user._count.spots > 0
+                        ? fillTemplate(dictionary.login.hostOf, { count: user._count.spots })
+                        : dictionary.login.renter}
+                    </span>
                   </span>
                 </button>
               </form>

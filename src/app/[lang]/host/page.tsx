@@ -1,3 +1,4 @@
+import { CalendarClock, Plus, TriangleAlert, Wallet } from "lucide-react";
 import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
@@ -55,18 +56,25 @@ async function HostContent() {
     <main className={styles.page}>
       <div className="flex items-center justify-between gap-3">
         <h1 className={styles.heading}>{text.title}</h1>
-        <Link href={`/${locale}/host/spots/new`} className={styles.buttonPrimary}>
-          + {text.addSpot}
+        <Link href={`/${locale}/host/spots/new`} className={`${styles.buttonPrimary} shrink-0`}>
+          <Plus size={18} aria-hidden />
+          {text.addSpot}
         </Link>
       </div>
 
       <section className="grid grid-cols-2 gap-3">
         <div className={styles.card}>
-          <p className={styles.muted}>{text.earned}</p>
-          <p className="text-2xl font-bold text-brand">{formatIls(earnings.earnedAgorot, locale)}</p>
+          <p className={`${styles.muted} flex items-center gap-1`}>
+            <Wallet size={14} aria-hidden />
+            {text.earned}
+          </p>
+          <p className="text-2xl font-bold text-accent">{formatIls(earnings.earnedAgorot, locale)}</p>
         </div>
         <div className={styles.card}>
-          <p className={styles.muted}>{text.upcomingEarnings}</p>
+          <p className={`${styles.muted} flex items-center gap-1`}>
+            <CalendarClock size={14} aria-hidden />
+            {text.upcomingEarnings}
+          </p>
           <p className="text-2xl font-bold">{formatIls(earnings.upcomingAgorot, locale)}</p>
         </div>
       </section>
@@ -85,7 +93,12 @@ async function HostContent() {
                     {spot.addressLine} · {formatIls(spot.hourlyRateAgorot, locale)} {dictionary.common.perHour}
                   </p>
                   {!spot.isActive && <span className={`${styles.badge} self-start`}>{text.unlisted}</span>}
-                  {spot.isActive && !hasAvailability && <p className="text-sm text-amber-700">{text.noAvailability}</p>}
+                  {spot.isActive && !hasAvailability && (
+                    <p className="flex items-center gap-1 text-sm text-amber-700 dark:text-amber-400">
+                      <TriangleAlert size={14} aria-hidden />
+                      {text.noAvailability}
+                    </p>
+                  )}
                 </div>
                 <Link href={`/${locale}/host/spots/${spot.id}`} className={styles.buttonSecondary}>
                   {text.edit}
@@ -113,7 +126,7 @@ async function HostContent() {
                       {booking.renter.phone !== null && (
                         <>
                           {" · "}
-                          <a href={`tel:${booking.renter.phone}`} className="underline" dir="ltr">
+                          <a href={`tel:${booking.renter.phone}`} className="whitespace-nowrap underline" dir="ltr">
                             {booking.renter.phone}
                           </a>
                         </>

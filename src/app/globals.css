@@ -3,12 +3,16 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  /* Brand-colored text/icons: dark teal on light, light teal on dark (AA both). */
+  --accent: #0f766e;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  /* Solid brand fill (buttons, chips); always paired with white text. */
   --color-brand: #0f766e;
+  --color-accent: var(--accent);
   --font-sans: var(--font-heebo);
 }
 
@@ -16,6 +20,7 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    --accent: #2dd4bf;
   }
 }
 

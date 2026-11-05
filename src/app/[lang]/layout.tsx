@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
+import { Suspense } from "react";
 import { Heebo } from "next/font/google";
 import { LOCALES, LOCALE_DIRECTION } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/dictionaries";
 import { AppHeader } from "@/components/AppHeader";
 import { ServiceWorkerRegistrar } from "@/components/ServiceWorkerRegistrar";
-import { InstallHint, OfflineBanner } from "@/components/StatusBanners";
+import { OfflineBanner } from "@/components/StatusBanners";
+import { TabBar, TabBarPlaceholder } from "@/components/TabBar";
 import "../globals.css";
 
 /** Heebo covers both Hebrew and Latin glyphs, so one font serves both locales. */
@@ -42,18 +44,20 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: LayoutProps<"/[lang]">) {
   const locale = await getLocale();
-  const status = (await getDictionary()).status;
+  const dictionary = await getDictionary();
   return (
     <html
       lang={locale}
       dir={LOCALE_DIRECTION[locale]}
       className={`${heebo.variable} h-full antialiased`}
     >
-      <body className="flex min-h-full flex-col">
-        <OfflineBanner message={status.offline} />
+      <body className="flex min-h-full flex-col pb-[calc(3.5rem+env(safe-area-inset-bottom))]">
+        <OfflineBanner message={dictionary.status.offline} />
         <AppHeader />
         {children}
-        <InstallHint title={status.installTitle} body={status.installIos} dismissLabel={status.dismiss} />
+        <Suspense fallback={<TabBarPlaceholder locale={locale} text={dictionary.nav} />}>
+          <TabBar locale={locale} text={dictionary.nav} />
+        </Suspense>
         <ServiceWorkerRegistrar />
       </body>
     </html>

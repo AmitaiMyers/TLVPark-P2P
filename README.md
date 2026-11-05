@@ -21,6 +21,12 @@ spot; dashboard with earned / upcoming totals; cancel a renter's booking.
 Blocking time that already has bookings is refused until those bookings are
 cancelled.
 
+**Mobile-first UI**: bottom tab bar (Search, My bookings, Host, Account);
+"Day · From · For" pickers instead of cramped date-time inputs; results
+default to the next two hours; large tap targets (44px+); light and dark
+themes; Hebrew (RTL) and English. Every screen passes an axe-core
+WCAG 2.1 AA scan in both themes.
+
 **Pricing**: per 30 minutes at half the hourly rate, never more than the
 daily cap per 24-hour block. Bookings are 1 hour minimum, 30 days maximum, on
 :00/:30 boundaries, in Israel time.
@@ -85,6 +91,7 @@ src/
     bookings/                   Renter bookings + booking details
     host/                       Host dashboard, new spot, manage spot
     login/                      Mock login
+    account/                    Profile, language, sign out
   app/api/geocode/route.ts      Tel Aviv address search (OpenStreetMap Nominatim)
   app/api/health/route.ts       Render health check
   app/manifest.json             Web app manifest

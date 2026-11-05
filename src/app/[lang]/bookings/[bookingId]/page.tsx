@@ -1,3 +1,4 @@
+import { CalendarClock, CircleCheck, KeyRound, Navigation, Phone, Receipt, Star, XCircle } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
@@ -5,7 +6,9 @@ import { Suspense } from "react";
 import { cancelBooking, submitReview } from "@/actions/bookings";
 import { ActionForm, SubmitButton } from "@/components/ActionForm";
 import { PageLoading } from "@/components/PageLoading";
+import { StarRow } from "@/components/RatingSummary";
 import { SaveBookingOffline } from "@/components/SaveBookingOffline";
+import { InstallHint } from "@/components/StatusBanners";
 import { styles } from "@/components/ui";
 import { backArrow } from "@/i18n/config";
 import { getDictionary, getLocale } from "@/i18n/dictionaries";
@@ -51,7 +54,7 @@ async function BookingContent({
     <main className={styles.page}>
       {justBooked && phase !== "CANCELLED" && (
         <p role="status" className={`${styles.success} text-base font-semibold`}>
-          ✓ {text.confirmed}
+          <CircleCheck size={20} className="inline align-text-bottom" aria-hidden /> {text.confirmed}
         </p>
       )}
       <header className="flex flex-col gap-1">
@@ -60,43 +63,41 @@ async function BookingContent({
         <p className={styles.muted} dir="auto">{spot.addressLine}</p>
       </header>
 
-      <section className={`${styles.card} flex flex-col gap-2`}>
-        <p className="text-lg font-semibold">{formatDateTimeRange(booking.startsAt, booking.endsAt, locale)}</p>
-        <p>
-          {formatIls(booking.totalPriceAgorot, locale)} · {text.paid}
-        </p>
-        {booking.cancelledBy !== null && (
-          <p className={styles.error}>
-            {fillTemplate(text.cancelledBy, { party: text.cancelledByParty[booking.cancelledBy] })}
-          </p>
-        )}
-        <a href={wazeNavigationUrl(spot)} target="_blank" rel="noreferrer" className="text-brand underline">
-          {dictionary.common.navigateWithWaze}
-        </a>
-      </section>
-
       {canSeeAccessDetails(phase) && (
-        <section className={`${styles.card} flex flex-col gap-3 border-brand`}>
-          <h2 className={styles.sectionTitle}>{text.accessTitle}</h2>
-          {spot.gatePhoneNumber !== null && (
-            <div className="flex flex-col gap-1">
-              <span className={styles.muted}>{text.gatePhone}</span>
-              <a href={`tel:${spot.gatePhoneNumber}`} className={styles.buttonPrimary} dir="ltr">
-                📞 {spot.gatePhoneNumber}
+        <section className={`${styles.card} flex flex-col gap-4 border-2 border-brand`}>
+          <h2 className={`${styles.sectionTitle} flex items-center gap-2`}>
+            <KeyRound size={20} className="text-accent" aria-hidden />
+            {text.accessTitle}
+          </h2>
+          <div className={`grid gap-2 ${spot.gatePhoneNumber === null ? "grid-cols-1" : "grid-cols-2"}`}>
+            {spot.gatePhoneNumber !== null && (
+              <a href={`tel:${spot.gatePhoneNumber}`} className={`${styles.buttonPrimary} flex-col gap-0.5`}>
+                <span className="flex items-center gap-2">
+                  <Phone size={18} aria-hidden />
+                  {text.callGate}
+                </span>
+                <span className="text-xs font-normal opacity-90" dir="ltr">
+                  {spot.gatePhoneNumber}
+                </span>
               </a>
-              <span className="text-xs">{text.callGate}</span>
-            </div>
-          )}
+            )}
+            <a href={wazeNavigationUrl(spot)} target="_blank" rel="noreferrer" className={styles.buttonSecondary}>
+              <Navigation size={18} aria-hidden />
+              {text.navigate}
+            </a>
+          </div>
           <div className="flex flex-col gap-1">
             <span className={styles.muted}>{text.instructions}</span>
-            <p className="whitespace-pre-line" dir="auto">{spot.accessInstructions}</p>
+            <p className="whitespace-pre-line text-base" dir="auto">
+              {spot.accessInstructions}
+            </p>
           </div>
           <p className="text-sm">
             {fillTemplate(dictionary.spot.host, { name: spot.host.name })}
             {spot.host.phone !== null && (
               <>
                 {" · "}
-                <a href={`tel:${spot.host.phone}`} className="underline" dir="ltr">
+                <a href={`tel:${spot.host.phone}`} className="whitespace-nowrap underline" dir="ltr">
                   {spot.host.phone}
                 </a>
               </>
@@ -105,6 +106,34 @@ async function BookingContent({
         </section>
       )}
       <SaveBookingOffline keepOffline={canSeeAccessDetails(phase)} savedLabel={text.savedOffline} />
+      {canSeeAccessDetails(phase) && (
+        <InstallHint
+          title={dictionary.status.installTitle}
+          body={dictionary.status.installIos}
+          dismissLabel={dictionary.status.dismiss}
+        />
+      )}
+
+      <section className={`${styles.card} flex flex-col gap-2`}>
+        <p className="flex items-center gap-2 text-lg font-semibold">
+          <CalendarClock size={20} className="text-accent" aria-hidden />
+          {formatDateTimeRange(booking.startsAt, booking.endsAt, locale)}
+        </p>
+        <p className="flex items-center gap-2">
+          <Receipt size={18} className="text-neutral-500" aria-hidden />
+          {formatIls(booking.totalPriceAgorot, locale)} · {text.paid}
+        </p>
+        {booking.cancelledBy !== null && (
+          <p className={styles.error}>
+            {fillTemplate(text.cancelledBy, { party: text.cancelledByParty[booking.cancelledBy] })}
+          </p>
+        )}
+        {!canSeeAccessDetails(phase) && (
+          <a href={wazeNavigationUrl(spot)} target="_blank" rel="noreferrer" className="text-sm text-accent underline">
+            {dictionary.common.navigateWithWaze}
+          </a>
+        )}
+      </section>
 
       {phase === "UPCOMING" && (
         <ActionForm
@@ -112,7 +141,10 @@ async function BookingContent({
           errorMessages={dictionary.errors}
           confirmMessage={text.cancelConfirm}
         >
-          <SubmitButton className={styles.buttonDanger}>{text.cancel}</SubmitButton>
+          <SubmitButton className={`${styles.buttonDanger} w-full`}>
+            <XCircle size={18} aria-hidden />
+            {text.cancel}
+          </SubmitButton>
         </ActionForm>
       )}
 
@@ -120,11 +152,16 @@ async function BookingContent({
         <section className={`${styles.card} flex flex-col gap-3`}>
           <h2 className={styles.sectionTitle}>{text.reviewTitle}</h2>
           <ActionForm action={submitReview.bind(null, locale, booking.id)} errorMessages={dictionary.errors}>
-            <fieldset className="flex gap-3 text-lg" dir="ltr">
+            <fieldset className="flex flex-wrap gap-2" dir="ltr">
+              <legend className="sr-only">{text.reviewTitle}</legend>
               {RATINGS.map((rating) => (
-                <label key={rating} className="flex items-center gap-1">
-                  <input type="radio" name="rating" value={rating} required />
-                  {rating}★
+                <label
+                  key={rating}
+                  className="inline-flex min-h-11 min-w-14 cursor-pointer items-center justify-center gap-1 rounded-full border border-black/15 px-3 font-semibold has-checked:border-amber-500 has-checked:bg-amber-100 has-focus-visible:ring-2 has-focus-visible:ring-brand dark:border-white/20 dark:has-checked:bg-amber-900"
+                >
+                  <input type="radio" name="rating" value={rating} required className="sr-only" />
+                  {rating}
+                  <Star size={16} className="fill-amber-400 text-amber-400" aria-hidden />
                 </label>
               ))}
             </fieldset>
@@ -139,10 +176,7 @@ async function BookingContent({
       {booking.review !== null && (
         <section className={`${styles.card} flex flex-col gap-1`}>
           <h2 className={styles.sectionTitle}>{text.yourReview}</h2>
-          <p>
-            {"★".repeat(booking.review.rating)}
-            {"☆".repeat(5 - booking.review.rating)}
-          </p>
+          <StarRow rating={booking.review.rating} size={18} />
           {booking.review.comment !== null && <p className="text-sm" dir="auto">{booking.review.comment}</p>}
         </section>
       )}

@@ -48,8 +48,3 @@ export function suggestedWindowValues(now: Date): { start: string; end: string }
     end: toJerusalemInputValue(new Date(nextSlotMs + SUGGESTED_DURATION_MS)),
   };
 }
-
-/** Earliest value a booking start may take (the slot in progress). */
-export function earliestStartValue(now: Date): string {
-  return toJerusalemInputValue(floorToSlot(now));
-}

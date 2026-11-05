@@ -1,5 +1,6 @@
 "use client";
 
+import { Share } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 import { styles } from "./ui";
 
@@ -35,7 +36,8 @@ function subscribeNever(): () => void {
 
 /**
  * iOS Safari never shows an install prompt, so iPhone users get a one-time
- * hint. Android/desktop Chrome show their own prompt from the manifest.
+ * hint, shown inline on booking pages where installing pays off (offline
+ * gate access). Android/desktop Chrome show their own prompt from the manifest.
  */
 function shouldOfferIosInstall(): boolean {
   const isIos = /iPhone|iPad|iPod/.test(navigator.userAgent);
@@ -54,8 +56,10 @@ export function InstallHint({ title, body, dismissLabel }: { title: string; body
   }
 
   return (
-    <aside className={`${styles.card} fixed inset-x-4 bottom-20 z-20 flex flex-col gap-2 shadow-lg`}>
-      <p className="font-semibold">{title}</p>
+    <aside className={`${styles.card} flex flex-col gap-2 border-brand/40`}>
+      <p className="flex items-center gap-2 font-semibold">
+        <Share size={18} aria-hidden /> {title}
+      </p>
       <p className="text-sm">{body}</p>
       <button type="button" onClick={dismiss} className={`${styles.buttonSecondary} self-end`}>
         {dismissLabel}

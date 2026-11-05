@@ -100,7 +100,12 @@ export function LocationPicker({ locale, text, defaultAddress, defaultLocation }
 
       <p className={styles.muted}>{location === null ? text.pinMissing : text.pinHint}</p>
       <div className="h-72 overflow-hidden rounded-2xl border border-black/10 dark:border-white/10">
-        <LeafletLocationPicker location={location} center={location ?? TEL_AVIV_CENTER} onPick={setLocation} />
+        <LeafletLocationPicker
+          location={location}
+          center={location ?? TEL_AVIV_CENTER}
+          pinLabel={text.pinHint}
+          onPick={setLocation}
+        />
       </div>
 
       <input type="hidden" name="latitude" value={location === null ? "" : location.latitude.toFixed(6)} />
